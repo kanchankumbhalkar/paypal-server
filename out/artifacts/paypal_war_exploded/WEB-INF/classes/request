@@ -19,7 +19,6 @@
       },
       "description": "The payment transaction description.",
       "custom": "EBAY_EMS_90048630024435",
-      "invoice_number": "48787589673",
       "payment_options": {
         "allowed_payment_method": "INSTANT_FUNDING_SOURCE"
       },

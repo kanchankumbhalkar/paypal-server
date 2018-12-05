@@ -3,10 +3,7 @@ package paypal;
 import org.json.JSONObject;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.io.IOException;
@@ -47,8 +44,6 @@ public class myapi {
 
     @POST
     @Path("/createpayment")
-//    @Produces(MediaType.APPLICATION_JSON)
-//    @Produces(MediaType.TEXT_PLAIN)
     public String createpayment() throws IOException, URISyntaxException {
 
         java.net.URL url = new java.net.URL(PAYMENT_URL);
@@ -81,7 +76,45 @@ public class myapi {
         return jsonObj.toString();
     }
 
-    public String getAccessToken() throws IOException {
+
+    @POST
+    @Path("/executepayment")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public String executepayment(String paymentData) throws IOException, URISyntaxException {
+
+        JSONObject jsonObj = new JSONObject(paymentData);
+        String EXECUTE_URL = PAYMENT_URL+"/"+jsonObj.get("paymentID")+"/execute";
+
+        java.net.URL url = new java.net.URL(EXECUTE_URL);
+        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+
+        String line;
+        String access_token=getAccessToken();
+        String requestBody = "{\"payer_id\": \""+jsonObj.get("payerID")+"\"}";
+
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Authorization", "Bearer " + access_token);
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setUseCaches(false);
+        conn.setDoOutput(true);
+
+        java.io.DataOutputStream output = new java.io.DataOutputStream(conn.getOutputStream());
+        output.write(requestBody.getBytes());
+        output.close();
+
+        // Read the response:
+        java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(conn.getInputStream()));
+        JSONObject jsonResponse = null;
+
+        while ((line = reader.readLine()) != null) {
+            System.out.println(line);
+            jsonResponse = new JSONObject(line);
+        }
+        reader.close();
+        return jsonResponse.toString();
+    }
+
+    private String getAccessToken() throws IOException {
 
         java.net.URL url = new java.net.URL(ACCESS_TOKEN_URL);
         HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
@@ -107,7 +140,6 @@ public class myapi {
         while ((line = reader.readLine()) != null) {
             System.out.println(line);
             JSONObject jsonObj = new JSONObject(line);
-
             access_token = (String) jsonObj.get("access_token");
         }
         reader.close();
@@ -122,20 +154,16 @@ public class myapi {
     private String readFile() throws IOException, URISyntaxException {
 
         StringBuilder result = new StringBuilder("");
-
         //Get file from resources folder
         ClassLoader classLoader = getClass().getClassLoader();
         File file = new File(classLoader.getResource("request").getFile());
 
         try (Scanner scanner = new Scanner(file)) {
-
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
                 result.append(line).append("\n");
             }
-
             scanner.close();
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -143,7 +171,5 @@ public class myapi {
         return result.toString();
 
     }
-
-
 
 }
